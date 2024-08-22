@@ -68,7 +68,7 @@ to turtle-setup ;; turtle procedure
 end
 
 to setup-patches
-  file-open "sugar-map.txt"
+  file-open "mapas-azucar/homogeneo-4.txt"
   foreach sort patches [ p ->
     ask p [
       set max-psugar file-read
@@ -474,9 +474,9 @@ deaths
 MONITOR
 25
 300
-177
+262
 345
-Muertes no naturales
+Muertes no naturales acumuladas
 starvation
 17
 1
