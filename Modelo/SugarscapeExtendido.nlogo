@@ -68,7 +68,7 @@ to turtle-setup ;; turtle procedure
 end
 
 to setup-patches
-  file-open "mapas-azucar/homogeneo-4.txt"
+  file-open "mapas-azucar/sugar-map.txt"
   foreach sort patches [ p ->
     ask p [
       set max-psugar file-read
@@ -129,6 +129,7 @@ to go
   update-deciles
   set total-wealth sum [sugar] of turtles
   set gini (gini-index-reserve / count turtles) * 2
+  redistribution welfare
   tick
 end
 
@@ -200,6 +201,24 @@ to update-deciles ;; updates the upper bounds of the deciles for turtles to know
   ]
 end
 
+to redistribution[flag] ;; wealth redistribution method
+  if flag[
+    let tax-collection-so-far 0
+    ;; Tax gathering
+    ask turtles[
+      let collection taxes-to-pay
+      set tax-collection-so-far (tax-collection-so-far + collection)
+      set sugar (sugar - collection)
+    ]
+    ;; wealth redistribution
+    ;; Universal Basic Income
+    let individual-income int(tax-collection-so-far / count turtles)
+    ask turtles[
+      set sugar sugar + individual-income
+    ]
+  ]
+end
+
 
 
 ;;
@@ -216,7 +235,7 @@ to-report my-current-decile ;; turtle procedure
   let index 0
   repeat 10[
     set x item index deciles ;; the current upper bound
-    ifelse (sugar >= x) [
+    ifelse (sugar >= x and index != 9) [
       set my-decile (my-decile + 1)
     ][
       report my-decile
@@ -268,14 +287,27 @@ to color-agents-by-decile
   if decile = 10 [set color blue - 90]
 end
 
+to-report taxes-to-pay
+  if decile = 1 [report int(sugar * taxation-i)]
+  if decile = 2 [report int(sugar * taxation-ii)]
+  if decile = 3 [report int(sugar * taxation-iii)]
+  if decile = 4 [report int(sugar * taxation-iv)]
+  if decile = 5 [report int(sugar * taxation-v)]
+  if decile = 6 [report int(sugar * taxation-vi)]
+  if decile = 7 [report int(sugar * taxation-vii)]
+  if decile = 8 [report int(sugar * taxation-viii)]
+  if decile = 9 [report int(sugar * taxation-ix)]
+  if decile = 10 [report int(sugar * taxation-x)]
+end
+
 
 ; Copyright 2009 Uri Wilensky.
 ; See Info tab for full copyright and license.
 @#$#@#$#@
 GRAPHICS-WINDOW
-300
+495
 10
-708
+903
 419
 -1
 -1
@@ -358,12 +390,12 @@ CHOOSER
 visualization
 visualization
 "no-visualization" "color-agents-by-vision" "color-agents-by-metabolism" "color-agents-by-age" "color-agents-by-decile"
-4
+3
 
 PLOT
-720
+915
 10
-925
+1120
 140
 Distribución de riqueza
 Azucar
@@ -387,7 +419,7 @@ initial-population
 initial-population
 10
 1000
-390.0
+400.0
 10
 1
 NIL
@@ -402,16 +434,16 @@ minimum-sugar-endowment
 minimum-sugar-endowment
 0
 200
-0.0
+9.0
 1
 1
 NIL
 HORIZONTAL
 
 PLOT
-720
+915
 145
-925
+1120
 295
 curva de Lorenz
 Pob %
@@ -428,9 +460,9 @@ PENS
 "lorenz" 1.0 0 -2674135 true "" "plot-pen-reset\nset-plot-pen-interval 100 / count turtles\nplot 0\nforeach lorenz-points plot"
 
 PLOT
-720
+915
 300
-925
+1120
 440
 indice Gini vs. tiempo
 Tiempo
@@ -483,27 +515,9 @@ starvation
 11
 
 PLOT
-930
-10
-1140
-140
-Muertes no naturales
-tiempo
-Muertes
-0.0
-300.0
-0.0
-100.0
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" "plot starvation-per-tick"
-
-PLOT
-930
+1125
 145
-1140
+1335
 295
 Edades
 edades
@@ -541,23 +555,23 @@ avg-gini
 11
 
 TEXTBOX
-85
-395
-185
-460
+25
+450
+125
+515
 Indice Gini promedio en las ultimos 100 ticks
 12
 0.0
 1
 
 PLOT
-930
+1125
 300
-1140
+1335
 440
 Riqueza total
-NIL
-NIL
+tiempo
+riqueza total
 0.0
 10.0
 0.0
@@ -567,6 +581,185 @@ false
 "" ""
 PENS
 "default" 1.0 0 -16777216 true "" "plot total-wealth"
+
+SWITCH
+300
+20
+407
+53
+welfare
+welfare
+0
+1
+-1000
+
+SLIDER
+300
+60
+472
+93
+taxation-I
+taxation-I
+0
+1
+0.0
+0.01
+1
+NIL
+HORIZONTAL
+
+SLIDER
+300
+95
+472
+128
+taxation-ii
+taxation-ii
+0
+1
+0.0
+0.01
+1
+NIL
+HORIZONTAL
+
+SLIDER
+300
+130
+472
+163
+taxation-iii
+taxation-iii
+0
+1
+0.05
+0.01
+1
+NIL
+HORIZONTAL
+
+SLIDER
+300
+165
+472
+198
+taxation-iv
+taxation-iv
+0
+1
+0.1
+0.01
+1
+NIL
+HORIZONTAL
+
+SLIDER
+300
+200
+472
+233
+taxation-v
+taxation-v
+0
+1
+0.1
+0.01
+1
+NIL
+HORIZONTAL
+
+SLIDER
+300
+235
+472
+268
+taxation-vi
+taxation-vi
+0
+1
+0.1
+0.01
+1
+NIL
+HORIZONTAL
+
+SLIDER
+300
+270
+472
+303
+taxation-vii
+taxation-vii
+0
+1
+0.15
+0.01
+1
+NIL
+HORIZONTAL
+
+SLIDER
+300
+305
+472
+338
+taxation-viii
+taxation-viii
+0
+1
+0.15
+0.01
+1
+NIL
+HORIZONTAL
+
+SLIDER
+300
+345
+472
+378
+taxation-ix
+taxation-ix
+0
+1
+0.2
+0.01
+1
+NIL
+HORIZONTAL
+
+SLIDER
+300
+380
+472
+413
+taxation-x
+taxation-x
+0
+1
+0.3
+0.01
+1
+NIL
+HORIZONTAL
+
+PLOT
+1125
+10
+1330
+140
+Producción
+tiempo
+porducción
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot total-wealth / count turtles"
 
 @#$#@#$#@
 ## WHAT IS IT?
