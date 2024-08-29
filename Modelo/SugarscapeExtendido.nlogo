@@ -9,6 +9,9 @@ globals [
   deciles               ;; a list with the upper bounds of each decile
   gini                  ;; current gini value
   total-wealth          ;; the sum of the wealths' agents
+  productivity          ;; a measure of optimization for sugar accumulation
+  productivities        ;; a list of the last 100 productivity degrees
+  avg-productivity      ;; average productivity degree in the last 100 ticks
 ]
 
 turtles-own [
@@ -38,7 +41,7 @@ to setup
   clear-all
   create-turtles initial-population [ turtle-setup ]
   setup-patches
-  setup-ginis
+  setup-ginis-and-productivities
   set total-wealth sum [sugar] of turtles
   update-lorenz-and-gini
   update-deciles
@@ -46,6 +49,8 @@ to setup
   set starvation 0
   set starvation-per-tick 0
   set gini 0
+  set productivity total-wealth / count turtles
+  set avg-productivity productivity
   reset-ticks
 end
 
@@ -79,10 +84,12 @@ to setup-patches
   file-close
 end
 
-to setup-ginis
+to setup-ginis-and-productivities
   set ginis []
+  set productivities []
   repeat 100[
     set ginis lput 0 ginis
+    set productivities lput 0 productivities
   ]
 end
 
@@ -130,6 +137,8 @@ to go
   set total-wealth sum [sugar] of turtles
   set gini (gini-index-reserve / count turtles) * 2
   redistribution welfare
+  set productivity total-wealth / count turtles
+  update-avg-productivity
   tick
 end
 
@@ -178,13 +187,23 @@ to update-lorenz-and-gini
 end
 
 to update-avg-gini
-  let current-gini (gini-index-reserve / count turtles) * 2
   ifelse ticks < 100 [
-    set avg-gini current-gini
+    set avg-gini gini
   ][
     let index ticks mod 100
-    set ginis replace-item index ginis current-gini ;; replaces the oldest value of the list with the current one
+    set ginis replace-item index ginis gini ;; replaces the oldest value of the list with the current one
     set avg-gini mean ginis
+  ]
+end
+
+
+to update-avg-productivity
+  ifelse ticks < 100 [
+    set avg-gini productivity
+  ][
+    let index ticks mod 100
+    set productivities replace-item index productivities productivity ;; replaces the oldest value of the list with the current one
+    set avg-productivity mean productivities
   ]
 end
 
@@ -555,11 +574,11 @@ avg-gini
 11
 
 TEXTBOX
-25
-450
-125
-515
-Indice Gini promedio en las ultimos 100 ticks
+190
+360
+290
+446
+Indice Gini y grado de productividad promedio en las ultimos 100 ticks
 12
 0.0
 1
@@ -589,7 +608,7 @@ SWITCH
 53
 welfare
 welfare
-0
+1
 1
 -1000
 
@@ -692,7 +711,7 @@ taxation-vii
 taxation-vii
 0
 1
-0.15
+0.12
 0.01
 1
 NIL
@@ -722,7 +741,7 @@ taxation-ix
 taxation-ix
 0
 1
-0.2
+0.15
 0.01
 1
 NIL
@@ -748,7 +767,7 @@ PLOT
 10
 1330
 140
-Producción
+Productividad
 tiempo
 porducción
 0.0
@@ -759,7 +778,18 @@ true
 false
 "" ""
 PENS
-"default" 1.0 0 -16777216 true "" "plot total-wealth / count turtles"
+"default" 1.0 0 -16777216 true "" "plot productivity"
+
+MONITOR
+80
+400
+177
+445
+productividad
+avg-productivity
+2
+1
+11
 
 @#$#@#$#@
 ## WHAT IS IT?
