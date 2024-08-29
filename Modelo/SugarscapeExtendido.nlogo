@@ -136,7 +136,7 @@ to go
   update-deciles
   set total-wealth sum [sugar] of turtles
   set gini (gini-index-reserve / count turtles) * 2
-  redistribution welfare
+  run redistribution
   set productivity total-wealth / count turtles
   update-avg-productivity
   tick
@@ -220,22 +220,38 @@ to update-deciles ;; updates the upper bounds of the deciles for turtles to know
   ]
 end
 
-to redistribution[flag] ;; wealth redistribution method
-  if flag[
-    let tax-collection-so-far 0
-    ;; Tax gathering
-    ask turtles[
-      let collection taxes-to-pay
-      set tax-collection-so-far (tax-collection-so-far + collection)
-      set sugar (sugar - collection)
-    ]
-    ;; wealth redistribution
-    ;; Universal Basic Income
-    let individual-income int(tax-collection-so-far / count turtles)
-    ask turtles[
-      set sugar sugar + individual-income
-    ]
+to no-redistribution
+end
+
+to UBI ;; wealth redistribution method
+  let tax-collection-so-far 0
+  ;; Tax gathering
+  ask turtles[
+    let collection taxes-to-pay
+    set tax-collection-so-far (tax-collection-so-far + collection)
+    set sugar (sugar - collection)
   ]
+  ;; Universal Basic Income
+  let individual-income int(tax-collection-so-far / count turtles)
+  ask turtles[
+    set sugar sugar + individual-income
+  ]
+end
+
+to poorest ;; wealth redistribution method
+  let tax-collection-so-far 0
+  ;; Tax gathering
+  ask turtles[
+    let collection taxes-to-pay
+    set tax-collection-so-far (tax-collection-so-far + collection)
+    set sugar (sugar - collection)
+  ]
+  ;; Deciles 1 and 2 will recive an income
+  let population (count turtles) / 10 ; population amount for any decile
+  let individual-i int ((tax-collection-so-far * .6) / population)
+  let indivitual-ii int ((tax-collection-so-far * .4) / population)
+  ask turtles with [decile = 1] [set sugar (sugar + individual-i)]
+  ask turtles with [decile = 1] [set sugar (sugar + individual-i)]
 end
 
 
@@ -601,22 +617,11 @@ false
 PENS
 "default" 1.0 0 -16777216 true "" "plot total-wealth"
 
-SWITCH
-300
-20
-407
-53
-welfare
-welfare
-1
-1
--1000
-
 SLIDER
-300
-60
-472
-93
+295
+10
+467
+43
 taxation-I
 taxation-I
 0
@@ -628,10 +633,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-300
-95
-472
-128
+295
+45
+467
+78
 taxation-ii
 taxation-ii
 0
@@ -643,10 +648,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-300
-130
-472
-163
+295
+80
+467
+113
 taxation-iii
 taxation-iii
 0
@@ -658,10 +663,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-300
-165
-472
-198
+295
+115
+467
+148
 taxation-iv
 taxation-iv
 0
@@ -673,10 +678,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-300
-200
-472
-233
+295
+150
+467
+183
 taxation-v
 taxation-v
 0
@@ -688,10 +693,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-300
-235
-472
-268
+295
+185
+467
+218
 taxation-vi
 taxation-vi
 0
@@ -703,10 +708,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-300
-270
-472
-303
+295
+220
+467
+253
 taxation-vii
 taxation-vii
 0
@@ -718,10 +723,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-300
-305
-472
-338
+295
+255
+467
+288
 taxation-viii
 taxation-viii
 0
@@ -733,10 +738,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-300
-345
-472
-378
+295
+295
+467
+328
 taxation-ix
 taxation-ix
 0
@@ -748,10 +753,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-300
-380
-472
-413
+295
+330
+467
+363
 taxation-x
 taxation-x
 0
@@ -790,6 +795,16 @@ avg-productivity
 2
 1
 11
+
+CHOOSER
+295
+375
+467
+420
+redistribution
+redistribution
+"No-redistribution" "UBI" "poorest"
+2
 
 @#$#@#$#@
 ## WHAT IS IT?
