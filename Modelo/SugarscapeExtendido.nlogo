@@ -1173,6 +1173,8 @@ NetLogo 6.4.0
     <timeLimit steps="1000"/>
     <metric>avg-gini</metric>
     <metric>starvation</metric>
+    <metric>avg-productivity</metric>
+    <metric>total-wealth</metric>
     <steppedValueSet variable="maximum-sugar-endowment" first="0" step="10" last="200"/>
     <steppedValueSet variable="minimum-sugar-endowment" first="0" step="10" last="200"/>
     <enumeratedValueSet variable="visualization">
