@@ -61,7 +61,7 @@ to turtle-setup ;; turtle procedure
   set sugar random-in-range minimum-sugar-endowment maximum-sugar-endowment
   set metabolism random-in-range 1 4
   set max-age random-in-range 60 100
-  set age 0
+  set age random-normal 30 10
   set vision random-in-range 1 6
   ;; turtles can look horizontally and vertically up to vision patches
   ;; but cannot look diagonally at all
@@ -144,12 +144,18 @@ end
 
 to turtle-move ;; turtle procedure
   ;; consider moving to unoccupied patches in our vision, as well as staying at the current patch
+  let choice random-float 1.0
   let move-candidates (patch-set patch-here (patches at-points vision-points) with [not any? turtles-here])
-  let possible-winners move-candidates with-max [psugar]
-  if any? possible-winners [
-    ;; if there are any such patches move to one of the patches that is closest
-    move-to min-one-of possible-winners [distance myself]
+  ifelse choice < 0.8[ ; most of the times the agent will take the best patch
+    let possible-winners move-candidates with-max [psugar]
+    if any? possible-winners [
+      ;; if there are any such patches move to one of the patches that is closest
+      move-to min-one-of possible-winners [distance myself]
+    ]
+  ][; irrational agent, random choice
+    move-to one-of move-candidates
   ]
+
 end
 
 to turtle-eat ;; turtle procedure
@@ -220,40 +226,80 @@ to update-deciles ;; updates the upper bounds of the deciles for turtles to know
   ]
 end
 
+;;
+;; Taxes methods
+;;
+
 to no-redistribution
 end
 
 to UBI ;; wealth redistribution method
-  let tax-collection-so-far 0
-  ;; Tax gathering
-  ask turtles[
-    let collection taxes-to-pay
-    set tax-collection-so-far (tax-collection-so-far + collection)
-    set sugar (sugar - collection)
-  ]
+  let collection total-collection
   ;; Universal Basic Income
-  let individual-income int(tax-collection-so-far / count turtles)
+  let individual-income int(total-collection / count turtles)
   ask turtles[
     set sugar sugar + individual-income
   ]
 end
 
 to poorest ;; wealth redistribution method
-  let tax-collection-so-far 0
-  ;; Tax gathering
-  ask turtles[
-    let collection taxes-to-pay
-    set tax-collection-so-far (tax-collection-so-far + collection)
-    set sugar (sugar - collection)
-  ]
+  let collection total-collection
   ;; Deciles 1 and 2 will recive an income
   let population (count turtles) / 10 ; population amount for any decile
-  let individual-i int ((tax-collection-so-far * .6) / population)
-  let indivitual-ii int ((tax-collection-so-far * .4) / population)
+  let individual-i int ((collection * .6) / population)
+  let individual-ii int ((collection * .4) / population)
   ask turtles with [decile = 1] [set sugar (sugar + individual-i)]
-  ask turtles with [decile = 1] [set sugar (sugar + individual-i)]
+  ask turtles with [decile = 2] [set sugar (sugar + individual-ii)]
 end
 
+to linear ;; wealth redistribution method
+  let collection total-collection
+  ;; Every decile will recive an income
+  let population (count turtles) / 10 ; population amount for any decile
+  ;Almost a linear growth
+  let individual-i int ((collection * .19) / population)
+  let individual-ii int ((collection * .16) / population)
+  let individual-iii int ((collection * .14) / population)
+  let individual-iv int ((collection * .12) / population)
+  let individual-v int ((collection * .1) / population)
+  let individual-vi int ((collection * .09) / population)
+  let individual-vii int ((collection * .07) / population)
+  let individual-viii int ((collection * .06) / population)
+  let individual-ix int ((collection * .04) / population)
+  let individual-x int ((collection * .03) / population)
+
+  ask turtles with [decile = 1] [set sugar (sugar + individual-i)]
+  ask turtles with [decile = 2] [set sugar (sugar + individual-ii)]
+  ask turtles with [decile = 3] [set sugar (sugar + individual-iii)]
+  ask turtles with [decile = 4] [set sugar (sugar + individual-iv)]
+  ask turtles with [decile = 5] [set sugar (sugar + individual-v)]
+  ask turtles with [decile = 6] [set sugar (sugar + individual-vi)]
+  ask turtles with [decile = 7] [set sugar (sugar + individual-vii)]
+  ask turtles with [decile = 8] [set sugar (sugar + individual-viii)]
+  ask turtles with [decile = 9] [set sugar (sugar + individual-ix)]
+  ask turtles with [decile = 10] [set sugar (sugar + individual-x)]
+end
+
+to quadratical
+  let collection total-collection
+  ;; Every decile will recive an income
+  let population (count turtles) / 10 ; population amount for any decile
+  let individual-i int ((collection * .5) / population)
+  let individual-ii int ((collection * .25) / population)
+  let individual-iii int ((collection * .125) / population)
+  let individual-iv int ((collection * .06) / population)
+  let individual-v int ((collection * .03) / population)
+  let individual-vi int ((collection * .0176) / population)
+  let individual-vii int ((collection * .0174) / population)
+
+  ask turtles with [decile = 1] [set sugar (sugar + individual-i)]
+  ask turtles with [decile = 2] [set sugar (sugar + individual-ii)]
+  ask turtles with [decile = 3] [set sugar (sugar + individual-iii)]
+  ask turtles with [decile = 4] [set sugar (sugar + individual-iv)]
+  ask turtles with [decile = 5] [set sugar (sugar + individual-v)]
+  ask turtles with [decile = 6] [set sugar (sugar + individual-vi)]
+  ask turtles with [decile = 7] [set sugar (sugar + individual-vii)]
+end
 
 
 ;;
@@ -278,6 +324,17 @@ to-report my-current-decile ;; turtle procedure
     set index (index + 1)
   ]
   report my-decile
+end
+
+to-report total-collection ;;collects all the taxes from the agents
+  let tax-collection-so-far 0
+  ;; Tax gathering
+  ask turtles[
+    let collection taxes-to-pay
+    set tax-collection-so-far (tax-collection-so-far + collection)
+    set sugar (sugar - collection)
+  ]
+ report tax-collection-so-far
 end
 
 ;;
@@ -425,7 +482,7 @@ CHOOSER
 visualization
 visualization
 "no-visualization" "color-agents-by-vision" "color-agents-by-metabolism" "color-agents-by-age" "color-agents-by-decile"
-3
+4
 
 PLOT
 915
@@ -469,7 +526,7 @@ minimum-sugar-endowment
 minimum-sugar-endowment
 0
 200
-9.0
+10.0
 1
 1
 NIL
@@ -593,8 +650,8 @@ TEXTBOX
 190
 360
 290
-446
-Indice Gini y grado de productividad promedio en las ultimos 100 ticks
+461
+Indice Gini y grado de riqueza per capita promedio en las ultimos 100 ticks
 12
 0.0
 1
@@ -772,7 +829,7 @@ PLOT
 10
 1330
 140
-Productividad
+Riqueza per cápita
 tiempo
 porducción
 0.0
@@ -790,7 +847,7 @@ MONITOR
 400
 177
 445
-productividad
+R per capita
 avg-productivity
 2
 1
@@ -803,8 +860,8 @@ CHOOSER
 420
 redistribution
 redistribution
-"No-redistribution" "UBI" "poorest"
-2
+"No-redistribution" "UBI" "poorest" "linear" "quadratical"
+0
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -1194,6 +1251,9 @@ NetLogo 6.4.0
     <steppedValueSet variable="minimum-sugar-endowment" first="0" step="10" last="200"/>
     <enumeratedValueSet variable="visualization">
       <value value="&quot;color-agents-by-decile&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="redistribution">
+      <value value="&quot;poorest&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="initial-population">
       <value value="400"/>
