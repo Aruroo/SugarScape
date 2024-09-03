@@ -698,7 +698,7 @@ taxation-ii
 taxation-ii
 0
 1
-0.0
+0.02
 0.01
 1
 NIL
@@ -728,7 +728,7 @@ taxation-iv
 taxation-iv
 0
 1
-0.1
+0.07
 0.01
 1
 NIL
@@ -758,7 +758,7 @@ taxation-vi
 taxation-vi
 0
 1
-0.1
+0.15
 0.01
 1
 NIL
@@ -773,7 +773,7 @@ taxation-vii
 taxation-vii
 0
 1
-0.12
+0.2
 0.01
 1
 NIL
@@ -788,7 +788,7 @@ taxation-viii
 taxation-viii
 0
 1
-0.15
+0.25
 0.01
 1
 NIL
@@ -803,7 +803,7 @@ taxation-ix
 taxation-ix
 0
 1
-0.15
+0.3
 0.01
 1
 NIL
@@ -818,7 +818,7 @@ taxation-x
 taxation-x
 0
 1
-0.3
+0.35
 0.01
 1
 NIL
