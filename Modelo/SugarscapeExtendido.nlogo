@@ -12,6 +12,8 @@ globals [
   productivity          ;; a measure of optimization for sugar accumulation
   productivities        ;; a list of the last 100 productivity degrees
   avg-productivity      ;; average productivity degree in the last 100 ticks
+  treasury              ;; the gathered taxes in this tick
+  dist-by-decile        ;; distribution of wealth by decile
 ]
 
 turtles-own [
@@ -21,7 +23,8 @@ turtles-own [
   vision-points   ;; the points that this turtle can see in relative to it's current position (based on vision)
   age             ;; the current age of this turtle (in ticks)
   max-age         ;; the age at which this turtle will die of natural causes
-  decile           ;; the decile to which this agent belongs
+  decile          ;; the decile to which this agent belongs
+  changed         ;; indicates if there was a change of decile in this tick
 ]
 
 patches-own [
@@ -49,8 +52,10 @@ to setup
   set starvation 0
   set starvation-per-tick 0
   set gini 0
+  set treasury 0
   set productivity total-wealth / count turtles
   set avg-productivity productivity
+  set dist-by-decile []
   reset-ticks
 end
 
@@ -63,6 +68,7 @@ to turtle-setup ;; turtle procedure
   set max-age random-in-range 60 100
   set age random-normal 30 10
   set vision random-in-range 1 6
+  set changed 0
   ;; turtles can look horizontally and vertically up to vision patches
   ;; but cannot look diagonally at all
   set vision-points []
@@ -119,7 +125,9 @@ to go
     turtle-move
     turtle-eat
     set age (age + 1)
+    let past-decile decile
     set decile my-current-decile
+    ifelse decile != past-decile [set changed 1][set changed 0]
     if sugar <= 0 or age > max-age [
       hatch 1 [ turtle-setup ]
       set deaths (deaths + 1)
@@ -131,12 +139,26 @@ to go
     ]
     run visualization
   ]
+  set total-wealth sum [sugar] of turtles
+
+  let index 1
+  set dist-by-decile []
+  repeat 10 [
+    let wealth 0
+    let percent 0
+    ask turtles with [decile = index][
+      set wealth wealth + sugar
+    ]
+    set percent wealth / total-wealth
+    set dist-by-decile lput percent dist-by-decile
+    set index index + 1
+  ]
+  run taxation
+  run redistribution
   update-lorenz-and-gini
   update-avg-gini
   update-deciles
-  set total-wealth sum [sugar] of turtles
   set gini (gini-index-reserve / count turtles) * 2
-  run redistribution
   set productivity total-wealth / count turtles
   update-avg-productivity
   tick
@@ -202,7 +224,6 @@ to update-avg-gini
   ]
 end
 
-
 to update-avg-productivity
   ifelse ticks < 100 [
     set avg-gini productivity
@@ -230,77 +251,127 @@ end
 ;; Taxes methods
 ;;
 
+;;
+;; Gathering taxes
+;;
+
+to no-collection
+end
+
+to dynamic-collection
+  let index 1
+  repeat 10[
+    let percent item (index - 1) dist-by-decile
+    ask turtles with [decile = index][
+      let my-contribution int(sugar * percent)
+      set sugar sugar - my-contribution
+      set treasury treasury + my-contribution
+    ]
+   set index index + 1
+  ]
+end
+
+to linear-collection
+  ask turtles[
+    let my-percent (decile * 0.03)
+    let my-contribution int(sugar * my-percent)
+    set sugar sugar - my-contribution
+    set treasury treasury + my-contribution
+  ]
+end
+
+to uniform-collection
+  ask turtles[
+    let my-contribution int(sugar * 0.1)
+    set sugar sugar - my-contribution
+    set treasury treasury + my-contribution
+  ]
+end
+;;
+;; Redistribution
+;;
+
 to no-redistribution
 end
 
 to UBI ;; wealth redistribution method
-  let collection total-collection
   ;; Universal Basic Income
-  let individual-income int(total-collection / count turtles)
+  let individual-income int(treasury / count turtles)
+  let rounding-loss treasury mod count turtles ;; avoid rounding losses
+  set treasury (treasury - individual-income * count turtles) + rounding-loss
   ask turtles[
     set sugar sugar + individual-income
   ]
 end
 
 to poorest ;; wealth redistribution method
-  let collection total-collection
   ;; Deciles 1 and 2 will recive an income
   let population (count turtles) / 10 ; population amount for any decile
-  let individual-i int ((collection * .6) / population)
-  let individual-ii int ((collection * .4) / population)
-  ask turtles with [decile = 1] [set sugar (sugar + individual-i)]
-  ask turtles with [decile = 2] [set sugar (sugar + individual-ii)]
+  let total-i int(treasury * .6)
+  let total-ii int(treasury * .4)
+  let individual-i int (total-i / population)
+  let individual-ii int (total-ii / population)
+
+  get-welfare 1 individual-i
+  get-welfare 2 individual-ii
+  ; let's avoid rounding loses:
+  let rounding-loss total-i mod population
+  set rounding-loss (rounding-loss + (total-ii mod population))
+  set treasury treasury + rounding-loss
 end
 
 to linear ;; wealth redistribution method
-  let collection total-collection
   ;; Every decile will recive an income
   let population (count turtles) / 10 ; population amount for any decile
-  ;Almost a linear growth
-  let individual-i int ((collection * .19) / population)
-  let individual-ii int ((collection * .16) / population)
-  let individual-iii int ((collection * .14) / population)
-  let individual-iv int ((collection * .12) / population)
-  let individual-v int ((collection * .1) / population)
-  let individual-vi int ((collection * .09) / population)
-  let individual-vii int ((collection * .07) / population)
-  let individual-viii int ((collection * .06) / population)
-  let individual-ix int ((collection * .04) / population)
-  let individual-x int ((collection * .03) / population)
-
-  ask turtles with [decile = 1] [set sugar (sugar + individual-i)]
-  ask turtles with [decile = 2] [set sugar (sugar + individual-ii)]
-  ask turtles with [decile = 3] [set sugar (sugar + individual-iii)]
-  ask turtles with [decile = 4] [set sugar (sugar + individual-iv)]
-  ask turtles with [decile = 5] [set sugar (sugar + individual-v)]
-  ask turtles with [decile = 6] [set sugar (sugar + individual-vi)]
-  ask turtles with [decile = 7] [set sugar (sugar + individual-vii)]
-  ask turtles with [decile = 8] [set sugar (sugar + individual-viii)]
-  ask turtles with [decile = 9] [set sugar (sugar + individual-ix)]
-  ask turtles with [decile = 10] [set sugar (sugar + individual-x)]
+  let i 1
+  let dist-deciles [0 0 0 0 0 0 0 0 0 0 0]
+  repeat 10[
+    let my-dist (10 - i) / 45
+    ; percentage of dist for decile. p.e. 9/45 = 20 % for decile I
+    ; 8/45 = 17 % for decile II...
+    set dist-deciles insert-item i dist-deciles my-dist
+    set i i + 1
+  ]
+  set i 1
+  repeat 10 [
+    ; redistribution
+    let current-dist item i dist-deciles
+    let total-current int(treasury * current-dist)
+    let individual int (total-current / population)
+    get-welfare i individual
+    ; prevents rounding losses
+    let rounding-loss total-current mod population
+    set treasury treasury + rounding-loss
+    set i i + 1
+  ]
 end
 
-to quadratical
-  let collection total-collection
+to dynamic ;; wealth redistribution method
   ;; Every decile will recive an income
   let population (count turtles) / 10 ; population amount for any decile
-  let individual-i int ((collection * .5) / population)
-  let individual-ii int ((collection * .25) / population)
-  let individual-iii int ((collection * .125) / population)
-  let individual-iv int ((collection * .06) / population)
-  let individual-v int ((collection * .03) / population)
-  let individual-vi int ((collection * .0176) / population)
-  let individual-vii int ((collection * .0174) / population)
+  let i 1
+  let j 9
+  repeat 10[
+    ; redistribution
+    let percent item j dist-by-decile
+    let total-current int(treasury * percent)
+    let individual int (total-current / population)
+    get-welfare i individual
+    ; prevents rounding losses
+    let rounding-loss total-current mod population
+    set treasury treasury + rounding-loss
+    set i i + 1
+    set j j - 1
+  ]
 
-  ask turtles with [decile = 1] [set sugar (sugar + individual-i)]
-  ask turtles with [decile = 2] [set sugar (sugar + individual-ii)]
-  ask turtles with [decile = 3] [set sugar (sugar + individual-iii)]
-  ask turtles with [decile = 4] [set sugar (sugar + individual-iv)]
-  ask turtles with [decile = 5] [set sugar (sugar + individual-v)]
-  ask turtles with [decile = 6] [set sugar (sugar + individual-vi)]
-  ask turtles with [decile = 7] [set sugar (sugar + individual-vii)]
 end
 
+to get-welfare [my-decile  individual] ; distributes wealth to the specific decile
+  ask turtles with [decile = my-decile] [
+    set sugar (sugar + individual)
+    set treasury (treasury - individual)
+  ]
+end
 
 ;;
 ;; Utilities
@@ -326,17 +397,6 @@ to-report my-current-decile ;; turtle procedure
   report my-decile
 end
 
-to-report total-collection ;;collects all the taxes from the agents
-  let tax-collection-so-far 0
-  ;; Tax gathering
-  ask turtles[
-    let collection taxes-to-pay
-    set tax-collection-so-far (tax-collection-so-far + collection)
-    set sugar (sugar - collection)
-  ]
- report tax-collection-so-far
-end
-
 ;;
 ;; Visualization Procedures
 ;;
@@ -354,42 +414,11 @@ to color-agents-by-metabolism ;; turtle procedure
 end
 
 to color-agents-by-age
-  if age < 10 and age >= 0 [set color blue]
-  if age < 20 and age >= 10 [set color blue - 10]
-  if age < 30 and age >= 20 [set color blue - 20]
-  if age < 40 and age >= 30 [set color blue - 30]
-  if age < 50 and age >= 40 [set color blue - 40]
-  if age < 60 and age >= 50 [set color blue - 50]
-  if age < 70 and age >= 60 [set color blue - 60]
-  if age < 80 and age >= 70 [set color blue - 70]
-  if age < 90 and age >= 80 [set color blue - 80]
-  if age < 100 and age >= 90 [set color blue - 90]
+  set color blue - ( int(age / 10) * 10 )
 end
 
 to color-agents-by-decile
-  if decile = 1 [set color blue]
-  if decile = 2 [set color blue - 10]
-  if decile = 3 [set color blue - 20]
-  if decile = 4 [set color blue - 30]
-  if decile = 5 [set color blue - 40]
-  if decile = 6 [set color blue - 50]
-  if decile = 7 [set color blue - 60]
-  if decile = 8 [set color blue - 70]
-  if decile = 9 [set color blue - 80]
-  if decile = 10 [set color blue - 90]
-end
-
-to-report taxes-to-pay
-  if decile = 1 [report int(sugar * taxation-i)]
-  if decile = 2 [report int(sugar * taxation-ii)]
-  if decile = 3 [report int(sugar * taxation-iii)]
-  if decile = 4 [report int(sugar * taxation-iv)]
-  if decile = 5 [report int(sugar * taxation-v)]
-  if decile = 6 [report int(sugar * taxation-vi)]
-  if decile = 7 [report int(sugar * taxation-vii)]
-  if decile = 8 [report int(sugar * taxation-viii)]
-  if decile = 9 [report int(sugar * taxation-ix)]
-  if decile = 10 [report int(sugar * taxation-x)]
+  set color blue - (decile - 1) * 10
 end
 
 
@@ -658,174 +687,6 @@ Indice Gini y grado de riqueza per capita promedio en las ultimos 100 ticks
 
 PLOT
 1125
-300
-1335
-440
-Riqueza total
-tiempo
-riqueza total
-0.0
-10.0
-0.0
-10.0
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" "plot total-wealth"
-
-SLIDER
-295
-10
-467
-43
-taxation-I
-taxation-I
-0
-1
-0.0
-0.01
-1
-NIL
-HORIZONTAL
-
-SLIDER
-295
-45
-467
-78
-taxation-ii
-taxation-ii
-0
-1
-0.02
-0.01
-1
-NIL
-HORIZONTAL
-
-SLIDER
-295
-80
-467
-113
-taxation-iii
-taxation-iii
-0
-1
-0.05
-0.01
-1
-NIL
-HORIZONTAL
-
-SLIDER
-295
-115
-467
-148
-taxation-iv
-taxation-iv
-0
-1
-0.07
-0.01
-1
-NIL
-HORIZONTAL
-
-SLIDER
-295
-150
-467
-183
-taxation-v
-taxation-v
-0
-1
-0.1
-0.01
-1
-NIL
-HORIZONTAL
-
-SLIDER
-295
-185
-467
-218
-taxation-vi
-taxation-vi
-0
-1
-0.15
-0.01
-1
-NIL
-HORIZONTAL
-
-SLIDER
-295
-220
-467
-253
-taxation-vii
-taxation-vii
-0
-1
-0.2
-0.01
-1
-NIL
-HORIZONTAL
-
-SLIDER
-295
-255
-467
-288
-taxation-viii
-taxation-viii
-0
-1
-0.25
-0.01
-1
-NIL
-HORIZONTAL
-
-SLIDER
-295
-295
-467
-328
-taxation-ix
-taxation-ix
-0
-1
-0.3
-0.01
-1
-NIL
-HORIZONTAL
-
-SLIDER
-295
-330
-467
-363
-taxation-x
-taxation-x
-0
-1
-0.35
-0.01
-1
-NIL
-HORIZONTAL
-
-PLOT
-1125
 10
 1330
 140
@@ -854,14 +715,60 @@ avg-productivity
 11
 
 CHOOSER
-295
-375
-467
-420
+305
+20
+477
+65
 redistribution
 redistribution
-"No-redistribution" "UBI" "poorest" "linear" "quadratical"
-0
+"no-redistribution" "UBI" "poorest" "linear" "dynamic"
+4
+
+PLOT
+1130
+305
+1335
+440
+Impuestos recaudados
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot treasury"
+
+CHOOSER
+305
+70
+497
+115
+taxation
+taxation
+"no-collection" "linear-collection" "dynamic-collection" "uniform-collection"
+2
+
+PLOT
+285
+260
+485
+410
+Cantidad de cambios de decil
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot sum [changed] of turtles"
 
 @#$#@#$#@
 ## WHAT IS IT?
