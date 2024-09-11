@@ -627,9 +627,9 @@ deaths
 MONITOR
 25
 300
-262
+160
 345
-Muertes no naturales acumuladas
+Muertes por hambruna
 starvation
 17
 1
@@ -715,14 +715,14 @@ avg-productivity
 11
 
 CHOOSER
-305
-20
-477
-65
+295
+70
+467
+115
 redistribution
 redistribution
 "no-redistribution" "UBI" "poorest" "linear" "dynamic"
-4
+2
 
 PLOT
 1130
@@ -743,21 +743,21 @@ PENS
 "default" 1.0 0 -16777216 true "" "plot treasury"
 
 CHOOSER
-305
-70
-497
-115
+295
+20
+487
+65
 taxation
 taxation
 "no-collection" "linear-collection" "dynamic-collection" "uniform-collection"
-2
+3
 
 PLOT
 285
 260
 485
 410
-Cantidad de cambios de decil
+Cambios de decil
 NIL
 NIL
 0.0
@@ -1146,7 +1146,7 @@ NetLogo 6.4.0
 @#$#@#$#@
 @#$#@#$#@
 <experiments>
-  <experiment name="experimento de rango" repetitions="1" runMetricsEveryStep="false">
+  <experiment name="dinamico-dinamico" repetitions="1" runMetricsEveryStep="false">
     <setup>setup</setup>
     <go>go</go>
     <timeLimit steps="1000"/>
@@ -1159,8 +1159,80 @@ NetLogo 6.4.0
     <enumeratedValueSet variable="visualization">
       <value value="&quot;color-agents-by-decile&quot;"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="taxation">
+      <value value="&quot;dynamic-collection&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="redistribution">
+      <value value="&quot;dynamic&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-population">
+      <value value="400"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="lineal-lineal" repetitions="1" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="1000"/>
+    <metric>avg-gini</metric>
+    <metric>starvation</metric>
+    <metric>avg-productivity</metric>
+    <metric>total-wealth</metric>
+    <steppedValueSet variable="maximum-sugar-endowment" first="0" step="10" last="200"/>
+    <steppedValueSet variable="minimum-sugar-endowment" first="0" step="10" last="200"/>
+    <enumeratedValueSet variable="visualization">
+      <value value="&quot;color-agents-by-decile&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="taxation">
+      <value value="&quot;linear-collection&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="redistribution">
+      <value value="&quot;linear&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-population">
+      <value value="400"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="lineal-dirigidos" repetitions="1" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="1000"/>
+    <metric>avg-gini</metric>
+    <metric>starvation</metric>
+    <metric>avg-productivity</metric>
+    <metric>total-wealth</metric>
+    <steppedValueSet variable="maximum-sugar-endowment" first="0" step="10" last="200"/>
+    <steppedValueSet variable="minimum-sugar-endowment" first="0" step="10" last="200"/>
+    <enumeratedValueSet variable="visualization">
+      <value value="&quot;color-agents-by-decile&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="taxation">
+      <value value="&quot;linear-collection&quot;"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="redistribution">
       <value value="&quot;poorest&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-population">
+      <value value="400"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="uniforme-uniforme" repetitions="1" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="1000"/>
+    <metric>avg-gini</metric>
+    <metric>starvation</metric>
+    <metric>avg-productivity</metric>
+    <metric>total-wealth</metric>
+    <steppedValueSet variable="maximum-sugar-endowment" first="0" step="10" last="200"/>
+    <steppedValueSet variable="minimum-sugar-endowment" first="0" step="10" last="200"/>
+    <enumeratedValueSet variable="visualization">
+      <value value="&quot;color-agents-by-decile&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="taxation">
+      <value value="&quot;uniform-collection&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="redistribution">
+      <value value="&quot;UBI&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="initial-population">
       <value value="400"/>
