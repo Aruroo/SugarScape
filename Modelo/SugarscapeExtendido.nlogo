@@ -2,18 +2,20 @@ globals [
   gini-index-reserve
   lorenz-points
   deaths
-  starvation            ;; accumulated amount of deaths by starvation
+  starvation            ;; accumulated number of deaths by starvation
   starvation-per-tick
-  avg-gini              ;; average gini index in the last 100 ticks
-  ginis                 ;; a list of the last 100 gini indexes
+  avg-gini              ;; average Gini index over the last 100 ticks
+  ginis                 ;; a list of the last 100 gini index values
   deciles               ;; a list with the upper bounds of each decile
-  gini                  ;; current gini value
-  total-wealth          ;; the sum of the wealths' agents
-  productivity          ;; a measure of optimization for sugar accumulation
-  productivities        ;; a list of the last 100 productivity degrees
-  avg-productivity      ;; average productivity degree in the last 100 ticks
-  treasury              ;; the gathered taxes in this tick
+  gini                  ;; current gini index value
+  total-wealth          ;; total wealth sum of all agents
+  productivity          ;; a measure of sugar accumulation efficiency
+  productivities        ;; a list of the last 100 productivity values
+  avg-productivity      ;; average productivity value over the last 100 ticks
+  treasury              ;; total taxes collected in this tick
   dist-by-decile        ;; distribution of wealth by decile
+  medians-diff          ;; a list of the last 100 medians of the agent's difference of sugar
+  avg-diff              ;; average of the agents' median sugar differences over the last 100 ticks
 ]
 
 turtles-own [
@@ -25,6 +27,8 @@ turtles-own [
   max-age         ;; the age at which this turtle will die of natural causes
   decile          ;; the decile to which this agent belongs
   changed         ;; indicates if there was a change of decile in this tick
+  past-sugar      ;; the amount of sugar in the past tick
+  diff-sugar      ;; the result of the difference of current sugar - past sugar
 ]
 
 patches-own [
@@ -44,7 +48,7 @@ to setup
   clear-all
   create-turtles initial-population [ turtle-setup ]
   setup-patches
-  setup-ginis-and-productivities
+  setup-lists
   set total-wealth sum [sugar] of turtles
   update-lorenz-and-gini
   update-deciles
@@ -90,12 +94,14 @@ to setup-patches
   file-close
 end
 
-to setup-ginis-and-productivities
+to setup-lists
   set ginis []
   set productivities []
+  set medians-diff []
   repeat 100[
     set ginis lput 0 ginis
     set productivities lput 0 productivities
+    set medians-diff lput 0 medians-diff
   ]
 end
 
@@ -122,6 +128,7 @@ to go
     patch-recolor
   ]
   ask turtles [
+    set past-sugar sugar
     turtle-move
     turtle-eat
     set age (age + 1)
@@ -155,12 +162,14 @@ to go
   ]
   run taxation
   run redistribution
+  ask turtles [set diff-sugar sugar - past-sugar]
   update-lorenz-and-gini
-  update-avg-gini
   update-deciles
   set gini (gini-index-reserve / count turtles) * 2
   set productivity total-wealth / count turtles
+  update-avg-gini
   update-avg-productivity
+  update-medians
   tick
 end
 
@@ -215,24 +224,24 @@ to update-lorenz-and-gini
 end
 
 to update-avg-gini
-  ifelse ticks < 100 [
-    set avg-gini gini
-  ][
-    let index ticks mod 100
-    set ginis replace-item index ginis gini ;; replaces the oldest value of the list with the current one
-    set avg-gini mean ginis
-  ]
+  let index ticks mod 100
+  set ginis replace-item index ginis gini ;; replaces the oldest value of the list with the current one
+  ifelse ticks < 100 [set avg-gini gini][set avg-gini mean ginis]
 end
 
 to update-avg-productivity
-  ifelse ticks < 100 [
-    set avg-gini productivity
-  ][
-    let index ticks mod 100
-    set productivities replace-item index productivities productivity ;; replaces the oldest value of the list with the current one
-    set avg-productivity mean productivities
-  ]
+  let index ticks mod 100
+  set productivities replace-item index productivities productivity ;; replaces the oldest value of the list with the current one
+  ifelse ticks < 100 [set avg-productivity productivity][set avg-productivity mean productivities]
 end
+
+to update-medians
+  let median-diff median [diff-sugar] of turtles
+  let index ticks mod 100
+  set medians-diff replace-item index medians-diff median-diff ;;replaces the oldes value of the list with the current one
+  ifelse ticks < 100 [set avg-diff median-diff][set avg-diff mean medians-diff]
+end
+
 
 to update-deciles ;; updates the upper bounds of the deciles for turtles to know their decile
   let sorted-wealths sort [sugar] of turtles
@@ -426,9 +435,9 @@ end
 ; See Info tab for full copyright and license.
 @#$#@#$#@
 GRAPHICS-WINDOW
-495
+505
 10
-903
+913
 419
 -1
 -1
@@ -470,9 +479,9 @@ NIL
 1
 
 BUTTON
-100
+90
 135
-190
+180
 175
 NIL
 go
@@ -487,9 +496,9 @@ NIL
 0
 
 BUTTON
-200
+180
 135
-290
+270
 175
 go once
 go
@@ -555,7 +564,7 @@ minimum-sugar-endowment
 minimum-sugar-endowment
 0
 200
-10.0
+11.0
 1
 1
 NIL
@@ -665,10 +674,10 @@ mean [age] of turtles
 11
 
 MONITOR
-25
-400
-80
-445
+280
+140
+335
+185
 gini
 avg-gini
 3
@@ -676,11 +685,11 @@ avg-gini
 11
 
 TEXTBOX
+305
 190
-360
-290
-461
-Indice Gini y grado de riqueza per capita promedio en las ultimos 100 ticks
+475
+235
+monitores del promedio en las ultimos 100 ticks
 12
 0.0
 1
@@ -704,10 +713,10 @@ PENS
 "default" 1.0 0 -16777216 true "" "plot productivity"
 
 MONITOR
-80
-400
-177
-445
+335
+140
+432
+185
 R per capita
 avg-productivity
 2
@@ -750,13 +759,13 @@ CHOOSER
 taxation
 taxation
 "no-collection" "linear-collection" "dynamic-collection" "uniform-collection"
-3
+1
 
 PLOT
+290
 285
-260
-485
-410
+490
+435
 Cambios de decil
 NIL
 NIL
@@ -769,6 +778,17 @@ false
 "" ""
 PENS
 "default" 1.0 0 -16777216 true "" "plot sum [changed] of turtles"
+
+MONITOR
+435
+140
+497
+185
+NIL
+avg-diff
+17
+1
+11
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -1154,6 +1174,7 @@ NetLogo 6.4.0
     <metric>starvation</metric>
     <metric>avg-productivity</metric>
     <metric>total-wealth</metric>
+    <metric>avg-diff</metric>
     <steppedValueSet variable="maximum-sugar-endowment" first="0" step="10" last="200"/>
     <steppedValueSet variable="minimum-sugar-endowment" first="0" step="10" last="200"/>
     <enumeratedValueSet variable="visualization">
@@ -1177,6 +1198,7 @@ NetLogo 6.4.0
     <metric>starvation</metric>
     <metric>avg-productivity</metric>
     <metric>total-wealth</metric>
+    <metric>avg-diff</metric>
     <steppedValueSet variable="maximum-sugar-endowment" first="0" step="10" last="200"/>
     <steppedValueSet variable="minimum-sugar-endowment" first="0" step="10" last="200"/>
     <enumeratedValueSet variable="visualization">
@@ -1200,6 +1222,7 @@ NetLogo 6.4.0
     <metric>starvation</metric>
     <metric>avg-productivity</metric>
     <metric>total-wealth</metric>
+    <metric>avg-diff</metric>
     <steppedValueSet variable="maximum-sugar-endowment" first="0" step="10" last="200"/>
     <steppedValueSet variable="minimum-sugar-endowment" first="0" step="10" last="200"/>
     <enumeratedValueSet variable="visualization">
@@ -1223,6 +1246,7 @@ NetLogo 6.4.0
     <metric>starvation</metric>
     <metric>avg-productivity</metric>
     <metric>total-wealth</metric>
+    <metric>avg-diff</metric>
     <steppedValueSet variable="maximum-sugar-endowment" first="0" step="10" last="200"/>
     <steppedValueSet variable="minimum-sugar-endowment" first="0" step="10" last="200"/>
     <enumeratedValueSet variable="visualization">
@@ -1233,6 +1257,150 @@ NetLogo 6.4.0
     </enumeratedValueSet>
     <enumeratedValueSet variable="redistribution">
       <value value="&quot;UBI&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-population">
+      <value value="400"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="dinamico-linear" repetitions="1" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="1000"/>
+    <metric>avg-gini</metric>
+    <metric>starvation</metric>
+    <metric>avg-productivity</metric>
+    <metric>total-wealth</metric>
+    <metric>avg-diff</metric>
+    <steppedValueSet variable="maximum-sugar-endowment" first="0" step="10" last="200"/>
+    <steppedValueSet variable="minimum-sugar-endowment" first="0" step="10" last="200"/>
+    <enumeratedValueSet variable="visualization">
+      <value value="&quot;color-agents-by-decile&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="taxation">
+      <value value="&quot;dynamic-collection&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="redistribution">
+      <value value="&quot;linear&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-population">
+      <value value="400"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="dinamico-uniforme" repetitions="1" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="1000"/>
+    <metric>avg-gini</metric>
+    <metric>starvation</metric>
+    <metric>avg-productivity</metric>
+    <metric>total-wealth</metric>
+    <metric>avg-diff</metric>
+    <steppedValueSet variable="maximum-sugar-endowment" first="0" step="10" last="200"/>
+    <steppedValueSet variable="minimum-sugar-endowment" first="0" step="10" last="200"/>
+    <enumeratedValueSet variable="visualization">
+      <value value="&quot;color-agents-by-decile&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="taxation">
+      <value value="&quot;dynamic-collection&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="redistribution">
+      <value value="&quot;UBI&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-population">
+      <value value="400"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="lineal-dinamico" repetitions="1" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="1000"/>
+    <metric>avg-gini</metric>
+    <metric>starvation</metric>
+    <metric>avg-productivity</metric>
+    <metric>total-wealth</metric>
+    <metric>avg-diff</metric>
+    <steppedValueSet variable="maximum-sugar-endowment" first="0" step="10" last="200"/>
+    <steppedValueSet variable="minimum-sugar-endowment" first="0" step="10" last="200"/>
+    <enumeratedValueSet variable="visualization">
+      <value value="&quot;color-agents-by-decile&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="taxation">
+      <value value="&quot;linear-collection&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="redistribution">
+      <value value="&quot;dynamic&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-population">
+      <value value="400"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="linear-uniforme" repetitions="1" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="1000"/>
+    <metric>avg-gini</metric>
+    <metric>starvation</metric>
+    <metric>avg-productivity</metric>
+    <metric>total-wealth</metric>
+    <metric>avg-diff</metric>
+    <steppedValueSet variable="maximum-sugar-endowment" first="0" step="10" last="200"/>
+    <steppedValueSet variable="minimum-sugar-endowment" first="0" step="10" last="200"/>
+    <enumeratedValueSet variable="visualization">
+      <value value="&quot;color-agents-by-decile&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="taxation">
+      <value value="&quot;linear-collection&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="redistribution">
+      <value value="&quot;UBI&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-population">
+      <value value="400"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="uniforme-dinamico" repetitions="1" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="1000"/>
+    <metric>avg-gini</metric>
+    <metric>starvation</metric>
+    <metric>avg-productivity</metric>
+    <metric>total-wealth</metric>
+    <metric>avg-diff</metric>
+    <steppedValueSet variable="maximum-sugar-endowment" first="0" step="10" last="200"/>
+    <steppedValueSet variable="minimum-sugar-endowment" first="0" step="10" last="200"/>
+    <enumeratedValueSet variable="visualization">
+      <value value="&quot;color-agents-by-decile&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="taxation">
+      <value value="&quot;uniform-collection&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="redistribution">
+      <value value="&quot;dynamic&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-population">
+      <value value="400"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="uniforme-lineal" repetitions="1" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="1000"/>
+    <metric>avg-gini</metric>
+    <metric>starvation</metric>
+    <metric>avg-productivity</metric>
+    <metric>total-wealth</metric>
+    <metric>avg-diff</metric>
+    <steppedValueSet variable="maximum-sugar-endowment" first="0" step="10" last="200"/>
+    <steppedValueSet variable="minimum-sugar-endowment" first="0" step="10" last="200"/>
+    <enumeratedValueSet variable="visualization">
+      <value value="&quot;color-agents-by-decile&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="taxation">
+      <value value="&quot;uniform-collection&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="redistribution">
+      <value value="&quot;linear&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="initial-population">
       <value value="400"/>
