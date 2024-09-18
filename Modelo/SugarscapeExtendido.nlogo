@@ -731,7 +731,7 @@ CHOOSER
 redistribution
 redistribution
 "no-redistribution" "UBI" "poorest" "linear" "dynamic"
-2
+0
 
 PLOT
 1130
@@ -759,7 +759,7 @@ CHOOSER
 taxation
 taxation
 "no-collection" "linear-collection" "dynamic-collection" "uniform-collection"
-1
+0
 
 PLOT
 290
@@ -1401,6 +1401,30 @@ NetLogo 6.4.0
     </enumeratedValueSet>
     <enumeratedValueSet variable="redistribution">
       <value value="&quot;linear&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-population">
+      <value value="400"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="sin politicas" repetitions="1" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="1000"/>
+    <metric>avg-gini</metric>
+    <metric>starvation</metric>
+    <metric>avg-productivity</metric>
+    <metric>total-wealth</metric>
+    <metric>avg-diff</metric>
+    <steppedValueSet variable="maximum-sugar-endowment" first="0" step="10" last="200"/>
+    <steppedValueSet variable="minimum-sugar-endowment" first="0" step="10" last="200"/>
+    <enumeratedValueSet variable="visualization">
+      <value value="&quot;color-agents-by-decile&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="taxation">
+      <value value="&quot;no-collection&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="redistribution">
+      <value value="&quot;no-redistribution&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="initial-population">
       <value value="400"/>
