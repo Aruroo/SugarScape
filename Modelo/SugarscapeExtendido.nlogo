@@ -134,7 +134,8 @@ to go
     set age (age + 1)
     let past-decile decile
     set decile my-current-decile
-    ifelse decile != past-decile [set changed 1][set changed 0]
+    ;ifelse decile != past-decile [set changed 1][set changed 0]
+    set changed abs ( decile - past-decile )
     if sugar <= 0 or age > max-age [
       hatch 1 [ turtle-setup ]
       set deaths (deaths + 1)
@@ -564,7 +565,7 @@ minimum-sugar-endowment
 minimum-sugar-endowment
 0
 200
-11.0
+190.0
 1
 1
 NIL
@@ -616,7 +617,7 @@ maximum-sugar-endowment
 maximum-sugar-endowment
 0
 200
-20.0
+200.0
 1
 1
 NIL
@@ -731,7 +732,7 @@ CHOOSER
 redistribution
 redistribution
 "no-redistribution" "UBI" "poorest" "linear" "dynamic"
-0
+2
 
 PLOT
 1130
@@ -759,13 +760,13 @@ CHOOSER
 taxation
 taxation
 "no-collection" "linear-collection" "dynamic-collection" "uniform-collection"
-0
+1
 
 PLOT
 290
-285
+375
 490
-435
+525
 Cambios de decil
 NIL
 NIL
@@ -777,7 +778,7 @@ true
 false
 "" ""
 PENS
-"default" 1.0 0 -16777216 true "" "plot sum [changed] of turtles"
+"default" 1.0 1 -16777216 true "" "histogram [changed] of turtles"
 
 MONITOR
 435
@@ -789,6 +790,24 @@ avg-diff
 17
 1
 11
+
+PLOT
+290
+225
+490
+375
+diferencia de azucar por tick
+NIL
+NIL
+-200.0
+200.0
+0.0
+20.0
+false
+false
+"" ""
+PENS
+"default" 1.0 1 -16777216 true "" "histogram [diff-sugar] of turtles"
 
 @#$#@#$#@
 ## WHAT IS IT?
