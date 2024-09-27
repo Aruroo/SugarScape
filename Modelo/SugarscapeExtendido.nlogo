@@ -4,18 +4,18 @@ globals [
   deaths
   starvation            ;; accumulated number of deaths by starvation
   starvation-per-tick
-  avg-gini              ;; average Gini index over the last 100 ticks
-  ginis                 ;; a list of the last 100 gini index values
+  avg-gini              ;; average Gini index over the last 500 ticks
+  ginis                 ;; a list of the last 500 gini index values
   deciles               ;; a list with the upper bounds of each decile
   gini                  ;; current gini index value
   total-wealth          ;; total wealth sum of all agents
   productivity          ;; a measure of sugar accumulation efficiency
-  productivities        ;; a list of the last 100 productivity values
-  avg-productivity      ;; average productivity value over the last 100 ticks
+  productivities        ;; a list of the last 500 productivity values (wealth per capita)
+  avg-productivity      ;; average productivity value over the last 500 ticks
   treasury              ;; total taxes collected in this tick
   dist-by-decile        ;; distribution of wealth by decile
-  medians-diff          ;; a list of the last 100 medians of the agent's difference of sugar
-  avg-diff              ;; average of the agents' median sugar differences over the last 100 ticks
+  averages-list         ;; a list containing the averages of the agents' logarithmic returns for each of the last 500 ticks
+  avg-diff              ;; average of the logarithmic returns per tick, averaged over the last 500 ticks"
 ]
 
 turtles-own [
@@ -28,7 +28,8 @@ turtles-own [
   decile          ;; the decile to which this agent belongs
   changed         ;; indicates if there was a change of decile in this tick
   past-sugar      ;; the amount of sugar in the past tick
-  diff-sugar      ;; the result of the difference of current sugar - past sugar
+  past-decile     ;; decile in the past tick
+  log-return      ;; logarithmic return of the sugar from the previous tick to the current one
 ]
 
 patches-own [
@@ -97,11 +98,11 @@ end
 to setup-lists
   set ginis []
   set productivities []
-  set medians-diff []
-  repeat 100[
+  set averages-list []
+  repeat 500[
     set ginis lput 0 ginis
     set productivities lput 0 productivities
-    set medians-diff lput 0 medians-diff
+    set averages-list lput 0 averages-list
   ]
 end
 
@@ -112,29 +113,44 @@ end
 ;;
 
 to go
-
-  if maximum-sugar-endowment <= minimum-sugar-endowment [
-    stop
-  ]
-
-  if not any? turtles [
-    stop
-  ]
-
+  ;; stop conditions
+  if maximum-sugar-endowment <= minimum-sugar-endowment [ stop ]
+  if not any? turtles [ stop ]
   set starvation-per-tick 0
 
   ask patches [
     patch-growback
     patch-recolor
   ]
+  ;; turtle basic actions: move, eat and die
+  turtle-actions
+  update-deciles
+  set dist-by-decile []
+  update-dist-by-decile
+
+  run taxation
+  run redistribution
+  ask turtles [
+    set log-return ln (sugar / past-sugar )
+    ifelse decile != past-decile [set changed 1][set changed 0]
+  ]
+  update-lorenz-and-gini
+  set total-wealth sum [sugar] of turtles
+  set gini (gini-index-reserve / count turtles) * 2
+  set productivity total-wealth / count turtles
+  update-avg-gini
+  update-avg-productivity
+  update-medians
+  tick
+end
+
+to turtle-actions ;;global procedure
   ask turtles [
     set past-sugar sugar
+    set past-decile decile
     turtle-move
     turtle-eat
     set age (age + 1)
-    let past-decile decile
-    set decile my-current-decile
-    ifelse decile != past-decile [set changed 1][set changed 0]
     if sugar <= 0 or age > max-age [
       hatch 1 [ turtle-setup ]
       set deaths (deaths + 1)
@@ -146,31 +162,6 @@ to go
     ]
     run visualization
   ]
-  set total-wealth sum [sugar] of turtles
-
-  let index 1
-  set dist-by-decile []
-  repeat 10 [
-    let wealth 0
-    let percent 0
-    ask turtles with [decile = index][
-      set wealth wealth + sugar
-    ]
-    set percent wealth / total-wealth
-    set dist-by-decile lput percent dist-by-decile
-    set index index + 1
-  ]
-  run taxation
-  run redistribution
-  ask turtles [set diff-sugar sugar - past-sugar]
-  update-lorenz-and-gini
-  update-deciles
-  set gini (gini-index-reserve / count turtles) * 2
-  set productivity total-wealth / count turtles
-  update-avg-gini
-  update-avg-productivity
-  update-medians
-  tick
 end
 
 to turtle-move ;; turtle procedure
@@ -224,38 +215,58 @@ to update-lorenz-and-gini
 end
 
 to update-avg-gini
-  let index ticks mod 100
+  let index ticks mod 500
   set ginis replace-item index ginis gini ;; replaces the oldest value of the list with the current one
-  ifelse ticks < 100 [set avg-gini gini][set avg-gini mean ginis]
+  ifelse ticks < 500 [set avg-gini gini][set avg-gini mean ginis]
 end
 
 to update-avg-productivity
-  let index ticks mod 100
+  let index ticks mod 500
   set productivities replace-item index productivities productivity ;; replaces the oldest value of the list with the current one
-  ifelse ticks < 100 [set avg-productivity productivity][set avg-productivity mean productivities]
+  ifelse ticks < 500 [set avg-productivity productivity][set avg-productivity mean productivities]
 end
 
 to update-medians
-  let median-diff median [diff-sugar] of turtles
-  let index ticks mod 100
-  set medians-diff replace-item index medians-diff median-diff ;;replaces the oldes value of the list with the current one
-  ifelse ticks < 100 [set avg-diff median-diff][set avg-diff mean medians-diff]
+  ;; average logarithmic return of agents
+  let avg-log mean [log-return] of turtles
+  let index ticks mod 500
+  set averages-list replace-item index averages-list avg-log ;;replaces the oldes value of the list with the current one
+  ifelse ticks < 500 [set avg-diff avg-log][set avg-diff mean averages-list]
 end
 
-
-to update-deciles ;; updates the upper bounds of the deciles for turtles to know their decile
-  let sorted-wealths sort [sugar] of turtles
-  let num-people count turtles
-  set deciles [0 0 0 0 0 0 0 0 0 0]
-  let batch int num-people / 10 ;divides the population in ten equal batches
-  let index 0
-  repeat 10[
-    let current-upper item ( (index + 1) * batch - 1) sorted-wealths ; the upper bound of the current decile
-    set deciles replace-item  index deciles current-upper
-    set index (index + 1)
+to update-dist-by-decile ; global procedure
+    let index 1
+    repeat 10 [
+    let wealth 0
+    let percent 0
+    ask turtles with [decile = index][
+      set wealth wealth + sugar
+    ]
+    set percent wealth / total-wealth
+    set dist-by-decile lput percent dist-by-decile
+    set index index + 1
   ]
 end
 
+to update-deciles ;; global procedure, divides population in 10 equal groups by sugar
+  let people sort-on [sugar] turtles
+  let amount count turtles
+  let batch amount / 10
+  let group 1
+  let i 0
+  while [i < amount] [
+    if batch = 0[
+      if group < 10[set group (group + 1)]
+      ;restarts batch
+      set batch (amount / 10)
+    ]
+    let current-agent item i people
+    ask current-agent [ set decile group]
+    set batch (batch - 1)
+    set i (i + 1)
+  ]
+
+end
 ;;
 ;; Taxes methods
 ;;
@@ -273,27 +284,25 @@ to dynamic-collection
     let percent item (index - 1) dist-by-decile
     ask turtles with [decile = index][
       let my-contribution int(sugar * percent)
-      set sugar sugar - my-contribution
-      set treasury treasury + my-contribution
+      pay-taxes my-contribution
     ]
    set index index + 1
   ]
 end
 
+
 to linear-collection
   ask turtles[
     let my-percent (decile * 0.03)
     let my-contribution int(sugar * my-percent)
-    set sugar sugar - my-contribution
-    set treasury treasury + my-contribution
+    pay-taxes my-contribution
   ]
 end
 
 to uniform-collection
   ask turtles[
     let my-contribution int(sugar * 0.1)
-    set sugar sugar - my-contribution
-    set treasury treasury + my-contribution
+    pay-taxes my-contribution
   ]
 end
 ;;
@@ -303,11 +312,10 @@ end
 to no-redistribution
 end
 
-to UBI ;; wealth redistribution method
-  ;; Universal Basic Income
+to uniform ;; wealth redistribution method
+
   let individual-income int(treasury / count turtles)
-  let rounding-loss treasury mod count turtles ;; avoid rounding losses
-  set treasury (treasury - individual-income * count turtles) + rounding-loss
+  set treasury treasury - (individual-income * count turtles)
   ask turtles[
     set sugar sugar + individual-income
   ]
@@ -315,7 +323,7 @@ end
 
 to poorest ;; wealth redistribution method
   ;; Deciles 1 and 2 will recive an income
-  let population (count turtles) / 10 ; population amount for any decile
+  let population count turtles / 10 ; population amount for any decile
   let total-i int(treasury * .6)
   let total-ii int(treasury * .4)
   let individual-i int (total-i / population)
@@ -323,21 +331,16 @@ to poorest ;; wealth redistribution method
 
   get-welfare 1 individual-i
   get-welfare 2 individual-ii
-  ; let's avoid rounding loses:
-  let rounding-loss total-i mod population
-  set rounding-loss (rounding-loss + (total-ii mod population))
-  set treasury treasury + rounding-loss
+
 end
 
 to linear ;; wealth redistribution method
-  ;; Every decile will recive an income
   let population (count turtles) / 10 ; population amount for any decile
   let i 1
   let dist-deciles [0 0 0 0 0 0 0 0 0 0 0]
   repeat 10[
-    let my-dist (10 - i) / 45
     ; percentage of dist for decile. p.e. 9/45 = 20 % for decile I
-    ; 8/45 = 17 % for decile II...
+    let my-dist (10 - i) / 45
     set dist-deciles insert-item i dist-deciles my-dist
     set i i + 1
   ]
@@ -348,15 +351,11 @@ to linear ;; wealth redistribution method
     let total-current int(treasury * current-dist)
     let individual int (total-current / population)
     get-welfare i individual
-    ; prevents rounding losses
-    let rounding-loss total-current mod population
-    set treasury treasury + rounding-loss
     set i i + 1
   ]
 end
 
 to dynamic ;; wealth redistribution method
-  ;; Every decile will recive an income
   let population (count turtles) / 10 ; population amount for any decile
   let i 1
   let j 9
@@ -366,9 +365,6 @@ to dynamic ;; wealth redistribution method
     let total-current int(treasury * percent)
     let individual int (total-current / population)
     get-welfare i individual
-    ; prevents rounding losses
-    let rounding-loss total-current mod population
-    set treasury treasury + rounding-loss
     set i i + 1
     set j j - 1
   ]
@@ -382,6 +378,14 @@ to get-welfare [my-decile  individual] ; distributes wealth to the specific deci
   ]
 end
 
+to pay-taxes[my-contribution] ;; turtle method
+  ;; agents won't pay taxes if they can't afford it
+  if sugar - my-contribution > 0[
+        set sugar sugar - my-contribution
+        set treasury treasury + my-contribution
+  ]
+end
+
 ;;
 ;; Utilities
 ;;
@@ -390,21 +394,6 @@ to-report random-in-range [low high]
   report low + random (high - low + 1)
 end
 
-to-report my-current-decile ;; turtle procedure
-  let my-decile 1
-  let x 0
-  let index 0
-  repeat 10[
-    set x item index deciles ;; the current upper bound
-    ifelse (sugar >= x and index != 9) [
-      set my-decile (my-decile + 1)
-    ][
-      report my-decile
-    ]
-    set index (index + 1)
-  ]
-  report my-decile
-end
 
 ;;
 ;; Visualization Procedures
@@ -520,7 +509,7 @@ CHOOSER
 visualization
 visualization
 "no-visualization" "color-agents-by-vision" "color-agents-by-metabolism" "color-agents-by-age" "color-agents-by-decile"
-4
+0
 
 PLOT
 915
@@ -606,6 +595,7 @@ false
 "" ""
 PENS
 "default" 1.0 0 -13345367 true "" "plot gini"
+"pen-1" 1.0 0 -2674135 true "" "plot avg-gini"
 
 SLIDER
 10
@@ -644,24 +634,6 @@ starvation
 1
 11
 
-PLOT
-1125
-145
-1335
-295
-Edades
-edades
-cantidad
-0.0
-100.0
-0.0
-100.0
-true
-false
-"" ""
-PENS
-"default" 1.0 1 -16777216 true "" "set-histogram-num-bars 10\nset-plot-x-range 0 (max [age] of turtles + 1)\nset-plot-pen-interval (max [age] of turtles + 1) / 10\nhistogram [age] of turtles"
-
 MONITOR
 25
 250
@@ -689,7 +661,7 @@ TEXTBOX
 190
 475
 235
-monitores del promedio en las ultimos 100 ticks
+monitores del promedio en las ultimos 500 ticks
 12
 0.0
 1
@@ -710,7 +682,8 @@ true
 false
 "" ""
 PENS
-"default" 1.0 0 -16777216 true "" "plot productivity"
+"default" 1.0 0 -16777216 true "" "plot productivity\n"
+"pen-1" 1.0 0 -2674135 true "" "plot avg-productivity"
 
 MONITOR
 335
@@ -730,14 +703,14 @@ CHOOSER
 115
 redistribution
 redistribution
-"no-redistribution" "UBI" "poorest" "linear" "dynamic"
-0
+"no-redistribution" "uniform" "poorest" "linear" "dynamic"
+4
 
 PLOT
 1130
-305
+150
 1335
-440
+285
 Impuestos recaudados
 NIL
 NIL
@@ -759,13 +732,13 @@ CHOOSER
 taxation
 taxation
 "no-collection" "linear-collection" "dynamic-collection" "uniform-collection"
-0
+2
 
 PLOT
+1135
 290
-285
-490
-435
+1335
+440
 Cambios de decil
 NIL
 NIL
@@ -786,9 +759,27 @@ MONITOR
 185
 NIL
 avg-diff
-17
+5
 1
 11
+
+PLOT
+290
+260
+490
+410
+diferencias
+NIL
+NIL
+0.0
+10.0
+-10.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot avg-diff"
 
 @#$#@#$#@
 ## WHAT IS IT?
