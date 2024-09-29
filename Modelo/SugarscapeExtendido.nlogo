@@ -9,9 +9,9 @@ globals [
   deciles               ;; a list with the upper bounds of each decile
   gini                  ;; current gini index value
   total-wealth          ;; total wealth sum of all agents
-  productivity          ;; a measure of sugar accumulation efficiency
-  productivities        ;; a list of the last 500 productivity values (wealth per capita)
-  avg-productivity      ;; average productivity value over the last 500 ticks
+  wealth-per-capita     ;; total wealth divided by the number of people
+  riches                ;; a list of the last 500 wealth per capita values
+  avg-wealth            ;; average wealth per capita value over the last 500 ticks
   treasury              ;; total taxes collected in this tick
   dist-by-decile        ;; distribution of wealth by decile
   averages-list         ;; a list containing the averages of the agents' logarithmic returns for each of the last 500 ticks
@@ -58,8 +58,8 @@ to setup
   set starvation-per-tick 0
   set gini 0
   set treasury 0
-  set productivity total-wealth / count turtles
-  set avg-productivity productivity
+  set wealth-per-capita total-wealth / count turtles
+  set avg-wealth wealth-per-capita
   set dist-by-decile []
   reset-ticks
 end
@@ -97,11 +97,11 @@ end
 
 to setup-lists
   set ginis []
-  set productivities []
+  set riches []
   set averages-list []
   repeat 500[
     set ginis lput 0 ginis
-    set productivities lput 0 productivities
+    set riches lput 0 riches
     set averages-list lput 0 averages-list
   ]
 end
@@ -137,9 +137,9 @@ to go
   update-lorenz-and-gini
   set total-wealth sum [sugar] of turtles
   set gini (gini-index-reserve / count turtles) * 2
-  set productivity total-wealth / count turtles
+  set wealth-per-capita total-wealth / count turtles
   update-avg-gini
-  update-avg-productivity
+  update-avg-wealth
   update-medians
   tick
 end
@@ -220,10 +220,10 @@ to update-avg-gini
   ifelse ticks < 500 [set avg-gini gini][set avg-gini mean ginis]
 end
 
-to update-avg-productivity
+to update-avg-wealth
   let index ticks mod 500
-  set productivities replace-item index productivities productivity ;; replaces the oldest value of the list with the current one
-  ifelse ticks < 500 [set avg-productivity productivity][set avg-productivity mean productivities]
+  set riches replace-item index riches wealth-per-capita;; replaces the oldest value of the list with the current one
+  ifelse ticks < 500 [set avg-wealth wealth-per-capita][set avg-wealth mean riches]
 end
 
 to update-medians
@@ -682,8 +682,8 @@ true
 false
 "" ""
 PENS
-"default" 1.0 0 -16777216 true "" "plot productivity\n"
-"pen-1" 1.0 0 -2674135 true "" "plot avg-productivity"
+"default" 1.0 0 -16777216 true "" "plot wealth-per-capita\n"
+"pen-1" 1.0 0 -2674135 true "" "plot avg-wealth"
 
 MONITOR
 335
@@ -691,7 +691,7 @@ MONITOR
 432
 185
 R per capita
-avg-productivity
+avg-wealth
 2
 1
 11
@@ -704,7 +704,7 @@ CHOOSER
 redistribution
 redistribution
 "no-redistribution" "uniform" "poorest" "linear" "dynamic"
-4
+0
 
 PLOT
 1130
@@ -732,7 +732,7 @@ CHOOSER
 taxation
 taxation
 "no-collection" "linear-collection" "dynamic-collection" "uniform-collection"
-2
+0
 
 PLOT
 1135
@@ -1163,13 +1163,13 @@ NetLogo 6.4.0
     <timeLimit steps="1000"/>
     <metric>avg-gini</metric>
     <metric>starvation</metric>
-    <metric>avg-productivity</metric>
+    <metric>avg-wealth</metric>
     <metric>total-wealth</metric>
     <metric>avg-diff</metric>
-    <steppedValueSet variable="maximum-sugar-endowment" first="0" step="10" last="200"/>
-    <steppedValueSet variable="minimum-sugar-endowment" first="0" step="10" last="200"/>
+    <steppedValueSet variable="maximum-sugar-endowment" first="0" step="1" last="200"/>
+    <steppedValueSet variable="minimum-sugar-endowment" first="0" step="1" last="200"/>
     <enumeratedValueSet variable="visualization">
-      <value value="&quot;color-agents-by-decile&quot;"/>
+      <value value="&quot;no-visualization&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="taxation">
       <value value="&quot;dynamic-collection&quot;"/>
@@ -1187,13 +1187,13 @@ NetLogo 6.4.0
     <timeLimit steps="1000"/>
     <metric>avg-gini</metric>
     <metric>starvation</metric>
-    <metric>avg-productivity</metric>
+    <metric>avg-wealth</metric>
     <metric>total-wealth</metric>
     <metric>avg-diff</metric>
-    <steppedValueSet variable="maximum-sugar-endowment" first="0" step="10" last="200"/>
-    <steppedValueSet variable="minimum-sugar-endowment" first="0" step="10" last="200"/>
+    <steppedValueSet variable="maximum-sugar-endowment" first="0" step="1" last="200"/>
+    <steppedValueSet variable="minimum-sugar-endowment" first="0" step="1" last="200"/>
     <enumeratedValueSet variable="visualization">
-      <value value="&quot;color-agents-by-decile&quot;"/>
+      <value value="&quot;no-visualization&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="taxation">
       <value value="&quot;linear-collection&quot;"/>
@@ -1211,13 +1211,13 @@ NetLogo 6.4.0
     <timeLimit steps="1000"/>
     <metric>avg-gini</metric>
     <metric>starvation</metric>
-    <metric>avg-productivity</metric>
+    <metric>avg-wealth</metric>
     <metric>total-wealth</metric>
     <metric>avg-diff</metric>
-    <steppedValueSet variable="maximum-sugar-endowment" first="0" step="10" last="200"/>
-    <steppedValueSet variable="minimum-sugar-endowment" first="0" step="10" last="200"/>
+    <steppedValueSet variable="maximum-sugar-endowment" first="0" step="1" last="200"/>
+    <steppedValueSet variable="minimum-sugar-endowment" first="0" step="1" last="200"/>
     <enumeratedValueSet variable="visualization">
-      <value value="&quot;color-agents-by-decile&quot;"/>
+      <value value="&quot;no-visualization&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="taxation">
       <value value="&quot;linear-collection&quot;"/>
@@ -1235,13 +1235,13 @@ NetLogo 6.4.0
     <timeLimit steps="1000"/>
     <metric>avg-gini</metric>
     <metric>starvation</metric>
-    <metric>avg-productivity</metric>
+    <metric>avg-wealth</metric>
     <metric>total-wealth</metric>
     <metric>avg-diff</metric>
-    <steppedValueSet variable="maximum-sugar-endowment" first="0" step="10" last="200"/>
-    <steppedValueSet variable="minimum-sugar-endowment" first="0" step="10" last="200"/>
+    <steppedValueSet variable="maximum-sugar-endowment" first="0" step="1" last="200"/>
+    <steppedValueSet variable="minimum-sugar-endowment" first="0" step="1" last="200"/>
     <enumeratedValueSet variable="visualization">
-      <value value="&quot;color-agents-by-decile&quot;"/>
+      <value value="&quot;no-visualization&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="taxation">
       <value value="&quot;uniform-collection&quot;"/>
@@ -1259,13 +1259,13 @@ NetLogo 6.4.0
     <timeLimit steps="1000"/>
     <metric>avg-gini</metric>
     <metric>starvation</metric>
-    <metric>avg-productivity</metric>
+    <metric>avg-wealth</metric>
     <metric>total-wealth</metric>
     <metric>avg-diff</metric>
-    <steppedValueSet variable="maximum-sugar-endowment" first="0" step="10" last="200"/>
-    <steppedValueSet variable="minimum-sugar-endowment" first="0" step="10" last="200"/>
+    <steppedValueSet variable="maximum-sugar-endowment" first="0" step="1" last="200"/>
+    <steppedValueSet variable="minimum-sugar-endowment" first="0" step="1" last="200"/>
     <enumeratedValueSet variable="visualization">
-      <value value="&quot;color-agents-by-decile&quot;"/>
+      <value value="&quot;no-visualization&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="taxation">
       <value value="&quot;dynamic-collection&quot;"/>
@@ -1283,13 +1283,13 @@ NetLogo 6.4.0
     <timeLimit steps="1000"/>
     <metric>avg-gini</metric>
     <metric>starvation</metric>
-    <metric>avg-productivity</metric>
+    <metric>avg-wealth</metric>
     <metric>total-wealth</metric>
     <metric>avg-diff</metric>
-    <steppedValueSet variable="maximum-sugar-endowment" first="0" step="10" last="200"/>
-    <steppedValueSet variable="minimum-sugar-endowment" first="0" step="10" last="200"/>
+    <steppedValueSet variable="maximum-sugar-endowment" first="0" step="1" last="200"/>
+    <steppedValueSet variable="minimum-sugar-endowment" first="0" step="1" last="200"/>
     <enumeratedValueSet variable="visualization">
-      <value value="&quot;color-agents-by-decile&quot;"/>
+      <value value="&quot;no-visualization&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="taxation">
       <value value="&quot;dynamic-collection&quot;"/>
@@ -1307,13 +1307,13 @@ NetLogo 6.4.0
     <timeLimit steps="1000"/>
     <metric>avg-gini</metric>
     <metric>starvation</metric>
-    <metric>avg-productivity</metric>
+    <metric>avg-wealth</metric>
     <metric>total-wealth</metric>
     <metric>avg-diff</metric>
-    <steppedValueSet variable="maximum-sugar-endowment" first="0" step="10" last="200"/>
-    <steppedValueSet variable="minimum-sugar-endowment" first="0" step="10" last="200"/>
+    <steppedValueSet variable="maximum-sugar-endowment" first="0" step="1" last="200"/>
+    <steppedValueSet variable="minimum-sugar-endowment" first="0" step="1" last="200"/>
     <enumeratedValueSet variable="visualization">
-      <value value="&quot;color-agents-by-decile&quot;"/>
+      <value value="&quot;no-visualization&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="taxation">
       <value value="&quot;linear-collection&quot;"/>
@@ -1331,13 +1331,13 @@ NetLogo 6.4.0
     <timeLimit steps="1000"/>
     <metric>avg-gini</metric>
     <metric>starvation</metric>
-    <metric>avg-productivity</metric>
+    <metric>avg-wealth</metric>
     <metric>total-wealth</metric>
     <metric>avg-diff</metric>
-    <steppedValueSet variable="maximum-sugar-endowment" first="0" step="10" last="200"/>
-    <steppedValueSet variable="minimum-sugar-endowment" first="0" step="10" last="200"/>
+    <steppedValueSet variable="maximum-sugar-endowment" first="0" step="1" last="200"/>
+    <steppedValueSet variable="minimum-sugar-endowment" first="0" step="1" last="200"/>
     <enumeratedValueSet variable="visualization">
-      <value value="&quot;color-agents-by-decile&quot;"/>
+      <value value="&quot;no-visualization&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="taxation">
       <value value="&quot;linear-collection&quot;"/>
@@ -1355,13 +1355,13 @@ NetLogo 6.4.0
     <timeLimit steps="1000"/>
     <metric>avg-gini</metric>
     <metric>starvation</metric>
-    <metric>avg-productivity</metric>
+    <metric>avg-wealth</metric>
     <metric>total-wealth</metric>
     <metric>avg-diff</metric>
-    <steppedValueSet variable="maximum-sugar-endowment" first="0" step="10" last="200"/>
-    <steppedValueSet variable="minimum-sugar-endowment" first="0" step="10" last="200"/>
+    <steppedValueSet variable="maximum-sugar-endowment" first="0" step="1" last="200"/>
+    <steppedValueSet variable="minimum-sugar-endowment" first="0" step="1" last="200"/>
     <enumeratedValueSet variable="visualization">
-      <value value="&quot;color-agents-by-decile&quot;"/>
+      <value value="&quot;no-visualization&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="taxation">
       <value value="&quot;uniform-collection&quot;"/>
@@ -1379,13 +1379,13 @@ NetLogo 6.4.0
     <timeLimit steps="1000"/>
     <metric>avg-gini</metric>
     <metric>starvation</metric>
-    <metric>avg-productivity</metric>
+    <metric>avg-wealth</metric>
     <metric>total-wealth</metric>
     <metric>avg-diff</metric>
-    <steppedValueSet variable="maximum-sugar-endowment" first="0" step="10" last="200"/>
-    <steppedValueSet variable="minimum-sugar-endowment" first="0" step="10" last="200"/>
+    <steppedValueSet variable="maximum-sugar-endowment" first="0" step="1" last="200"/>
+    <steppedValueSet variable="minimum-sugar-endowment" first="0" step="1" last="200"/>
     <enumeratedValueSet variable="visualization">
-      <value value="&quot;color-agents-by-decile&quot;"/>
+      <value value="&quot;no-visualization&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="taxation">
       <value value="&quot;uniform-collection&quot;"/>
@@ -1403,13 +1403,13 @@ NetLogo 6.4.0
     <timeLimit steps="1000"/>
     <metric>avg-gini</metric>
     <metric>starvation</metric>
-    <metric>avg-productivity</metric>
+    <metric>avg-wealth</metric>
     <metric>total-wealth</metric>
     <metric>avg-diff</metric>
-    <steppedValueSet variable="maximum-sugar-endowment" first="0" step="10" last="200"/>
-    <steppedValueSet variable="minimum-sugar-endowment" first="0" step="10" last="200"/>
+    <steppedValueSet variable="maximum-sugar-endowment" first="0" step="1" last="200"/>
+    <steppedValueSet variable="minimum-sugar-endowment" first="0" step="1" last="200"/>
     <enumeratedValueSet variable="visualization">
-      <value value="&quot;color-agents-by-decile&quot;"/>
+      <value value="&quot;no-visualization&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="taxation">
       <value value="&quot;no-collection&quot;"/>
