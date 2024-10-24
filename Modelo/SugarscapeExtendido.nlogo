@@ -167,17 +167,13 @@ end
 
 to turtle-move ;; turtle procedure
   ;; consider moving to unoccupied patches in our vision, as well as staying at the current patch
-  let choice random-float 1.0
   let move-candidates (patch-set patch-here (patches at-points vision-points) with [not any? turtles-here])
-  ifelse choice < 0.8[ ; most of the times the agent will take the best patch
-    let possible-winners move-candidates with-max [psugar]
-    if any? possible-winners [
-      ;; if there are any such patches move to one of the patches that is closest
-      move-to min-one-of possible-winners [distance myself]
-    ]
-  ][; irrational agent, random choice
-    move-to one-of move-candidates
+  let possible-winners move-candidates with-max [psugar]
+  if any? possible-winners [
+    ;; if there are any such patches move to one of the patches that is closest
+    move-to min-one-of possible-winners [distance myself]
   ]
+
 
 end
 
@@ -293,7 +289,7 @@ end
 
 to linear-collection
   ask turtles[
-    let my-percent (decile * 0.03)
+    let my-percent (decile * 0.015)
     let my-contribution int(sugar * my-percent)
     pay-taxes my-contribution
   ]
@@ -301,7 +297,7 @@ end
 
 to uniform-collection
   ask turtles[
-    let my-contribution int(sugar * 0.1)
+    let my-contribution int(sugar * 0.05)
     pay-taxes my-contribution
   ]
 end
@@ -313,7 +309,8 @@ to no-redistribution
 end
 
 to uniform ;; wealth redistribution method
-
+  ;a loss of wealth is modeled during redistribution
+  treasury-loss
   let individual-income int(treasury / count turtles)
   set treasury treasury - (individual-income * count turtles)
   ask turtles[
@@ -322,6 +319,8 @@ to uniform ;; wealth redistribution method
 end
 
 to poorest ;; wealth redistribution method
+  ;a loss of wealth is modeled during redistribution
+  treasury-loss
   ;; Deciles 1 and 2 will recive an income
   let population count turtles / 10 ; population amount for any decile
   let total-i int(treasury * .6)
@@ -335,7 +334,10 @@ to poorest ;; wealth redistribution method
 end
 
 to linear ;; wealth redistribution method
-  let population (count turtles) / 10 ; population amount for any decile
+  ;a loss of wealth is modeled during redistribution
+  treasury-loss
+  ;population amount for any decile
+  let population (count turtles) / 10
   let i 1
   let dist-deciles [0 0 0 0 0 0 0 0 0 0 0]
   repeat 10[
@@ -356,7 +358,10 @@ to linear ;; wealth redistribution method
 end
 
 to dynamic ;; wealth redistribution method
-  let population (count turtles) / 10 ; population amount for any decile
+  ;a loss of wealth is modeled during redistribution
+  treasury-loss
+  ;population amount for any decile
+  let population (count turtles) / 10
   let i 1
   let j 9
   repeat 10[
@@ -386,6 +391,9 @@ to pay-taxes[my-contribution] ;; turtle method
   ]
 end
 
+to treasury-loss ;;simulates wealth dissipation when redistributing
+  set treasury int (treasury / 2)
+end
 ;;
 ;; Utilities
 ;;
@@ -553,7 +561,7 @@ minimum-sugar-endowment
 minimum-sugar-endowment
 0
 200
-20.0
+10.0
 1
 1
 NIL
@@ -693,7 +701,7 @@ CHOOSER
 redistribution
 redistribution
 "no-redistribution" "uniform" "poorest" "linear" "dynamic"
-1
+0
 
 PLOT
 1155
@@ -721,7 +729,7 @@ CHOOSER
 taxation
 taxation
 "no-collection" "linear-collection" "dynamic-collection" "uniform-collection"
-3
+0
 
 PLOT
 1155
@@ -1160,14 +1168,14 @@ NetLogo 6.4.0
   <experiment name="dinamico-dinamico" repetitions="1" runMetricsEveryStep="false">
     <setup>setup</setup>
     <go>go</go>
-    <timeLimit steps="1500"/>
+    <timeLimit steps="5000"/>
     <metric>avg-gini</metric>
     <metric>starvation</metric>
     <metric>avg-wealth</metric>
     <metric>total-wealth</metric>
     <metric>avg-diff</metric>
-    <steppedValueSet variable="maximum-sugar-endowment" first="10" step="10" last="200"/>
-    <steppedValueSet variable="minimum-sugar-endowment" first="10" step="10" last="200"/>
+    <steppedValueSet variable="maximum-sugar-endowment" first="10" step="1" last="200"/>
+    <steppedValueSet variable="minimum-sugar-endowment" first="10" step="1" last="200"/>
     <enumeratedValueSet variable="visualization">
       <value value="&quot;no-visualization&quot;"/>
     </enumeratedValueSet>
@@ -1184,14 +1192,14 @@ NetLogo 6.4.0
   <experiment name="lineal-lineal" repetitions="1" runMetricsEveryStep="false">
     <setup>setup</setup>
     <go>go</go>
-    <timeLimit steps="1500"/>
+    <timeLimit steps="5000"/>
     <metric>avg-gini</metric>
     <metric>starvation</metric>
     <metric>avg-wealth</metric>
     <metric>total-wealth</metric>
     <metric>avg-diff</metric>
-    <steppedValueSet variable="maximum-sugar-endowment" first="10" step="10" last="200"/>
-    <steppedValueSet variable="minimum-sugar-endowment" first="10" step="10" last="200"/>
+    <steppedValueSet variable="maximum-sugar-endowment" first="10" step="1" last="200"/>
+    <steppedValueSet variable="minimum-sugar-endowment" first="10" step="1" last="200"/>
     <enumeratedValueSet variable="visualization">
       <value value="&quot;no-visualization&quot;"/>
     </enumeratedValueSet>
@@ -1208,14 +1216,14 @@ NetLogo 6.4.0
   <experiment name="lineal-dirigidos" repetitions="1" runMetricsEveryStep="false">
     <setup>setup</setup>
     <go>go</go>
-    <timeLimit steps="1500"/>
+    <timeLimit steps="5000"/>
     <metric>avg-gini</metric>
     <metric>starvation</metric>
     <metric>avg-wealth</metric>
     <metric>total-wealth</metric>
     <metric>avg-diff</metric>
-    <steppedValueSet variable="maximum-sugar-endowment" first="10" step="10" last="200"/>
-    <steppedValueSet variable="minimum-sugar-endowment" first="10" step="10" last="200"/>
+    <steppedValueSet variable="maximum-sugar-endowment" first="10" step="1" last="200"/>
+    <steppedValueSet variable="minimum-sugar-endowment" first="10" step="1" last="200"/>
     <enumeratedValueSet variable="visualization">
       <value value="&quot;no-visualization&quot;"/>
     </enumeratedValueSet>
@@ -1232,14 +1240,14 @@ NetLogo 6.4.0
   <experiment name="uniforme-uniforme" repetitions="1" runMetricsEveryStep="false">
     <setup>setup</setup>
     <go>go</go>
-    <timeLimit steps="1500"/>
+    <timeLimit steps="5000"/>
     <metric>avg-gini</metric>
     <metric>starvation</metric>
     <metric>avg-wealth</metric>
     <metric>total-wealth</metric>
     <metric>avg-diff</metric>
-    <steppedValueSet variable="maximum-sugar-endowment" first="10" step="10" last="200"/>
-    <steppedValueSet variable="minimum-sugar-endowment" first="10" step="10" last="200"/>
+    <steppedValueSet variable="maximum-sugar-endowment" first="10" step="1" last="200"/>
+    <steppedValueSet variable="minimum-sugar-endowment" first="10" step="1" last="200"/>
     <enumeratedValueSet variable="visualization">
       <value value="&quot;no-visualization&quot;"/>
     </enumeratedValueSet>
@@ -1253,17 +1261,17 @@ NetLogo 6.4.0
       <value value="400"/>
     </enumeratedValueSet>
   </experiment>
-  <experiment name="dinamico-linear" repetitions="1" runMetricsEveryStep="false">
+  <experiment name="dinamico-lineal" repetitions="1" runMetricsEveryStep="false">
     <setup>setup</setup>
     <go>go</go>
-    <timeLimit steps="1500"/>
+    <timeLimit steps="5000"/>
     <metric>avg-gini</metric>
     <metric>starvation</metric>
     <metric>avg-wealth</metric>
     <metric>total-wealth</metric>
     <metric>avg-diff</metric>
-    <steppedValueSet variable="maximum-sugar-endowment" first="10" step="10" last="200"/>
-    <steppedValueSet variable="minimum-sugar-endowment" first="10" step="10" last="200"/>
+    <steppedValueSet variable="maximum-sugar-endowment" first="10" step="1" last="200"/>
+    <steppedValueSet variable="minimum-sugar-endowment" first="10" step="1" last="200"/>
     <enumeratedValueSet variable="visualization">
       <value value="&quot;no-visualization&quot;"/>
     </enumeratedValueSet>
@@ -1280,14 +1288,14 @@ NetLogo 6.4.0
   <experiment name="dinamico-uniforme" repetitions="1" runMetricsEveryStep="false">
     <setup>setup</setup>
     <go>go</go>
-    <timeLimit steps="1500"/>
+    <timeLimit steps="5000"/>
     <metric>avg-gini</metric>
     <metric>starvation</metric>
     <metric>avg-wealth</metric>
     <metric>total-wealth</metric>
     <metric>avg-diff</metric>
-    <steppedValueSet variable="maximum-sugar-endowment" first="10" step="10" last="200"/>
-    <steppedValueSet variable="minimum-sugar-endowment" first="10" step="10" last="200"/>
+    <steppedValueSet variable="maximum-sugar-endowment" first="10" step="1" last="200"/>
+    <steppedValueSet variable="minimum-sugar-endowment" first="10" step="1" last="200"/>
     <enumeratedValueSet variable="visualization">
       <value value="&quot;no-visualization&quot;"/>
     </enumeratedValueSet>
@@ -1304,14 +1312,14 @@ NetLogo 6.4.0
   <experiment name="lineal-dinamico" repetitions="1" runMetricsEveryStep="false">
     <setup>setup</setup>
     <go>go</go>
-    <timeLimit steps="1500"/>
+    <timeLimit steps="5000"/>
     <metric>avg-gini</metric>
     <metric>starvation</metric>
     <metric>avg-wealth</metric>
     <metric>total-wealth</metric>
     <metric>avg-diff</metric>
-    <steppedValueSet variable="maximum-sugar-endowment" first="10" step="10" last="200"/>
-    <steppedValueSet variable="minimum-sugar-endowment" first="10" step="10" last="200"/>
+    <steppedValueSet variable="maximum-sugar-endowment" first="10" step="1" last="200"/>
+    <steppedValueSet variable="minimum-sugar-endowment" first="10" step="1" last="200"/>
     <enumeratedValueSet variable="visualization">
       <value value="&quot;no-visualization&quot;"/>
     </enumeratedValueSet>
@@ -1325,17 +1333,17 @@ NetLogo 6.4.0
       <value value="400"/>
     </enumeratedValueSet>
   </experiment>
-  <experiment name="linear-uniforme" repetitions="1" runMetricsEveryStep="false">
+  <experiment name="lineal-uniforme" repetitions="1" runMetricsEveryStep="false">
     <setup>setup</setup>
     <go>go</go>
-    <timeLimit steps="1500"/>
+    <timeLimit steps="5000"/>
     <metric>avg-gini</metric>
     <metric>starvation</metric>
     <metric>avg-wealth</metric>
     <metric>total-wealth</metric>
     <metric>avg-diff</metric>
-    <steppedValueSet variable="maximum-sugar-endowment" first="10" step="10" last="200"/>
-    <steppedValueSet variable="minimum-sugar-endowment" first="10" step="10" last="200"/>
+    <steppedValueSet variable="maximum-sugar-endowment" first="10" step="1" last="200"/>
+    <steppedValueSet variable="minimum-sugar-endowment" first="10" step="1" last="200"/>
     <enumeratedValueSet variable="visualization">
       <value value="&quot;no-visualization&quot;"/>
     </enumeratedValueSet>
@@ -1352,14 +1360,14 @@ NetLogo 6.4.0
   <experiment name="uniforme-dinamico" repetitions="1" runMetricsEveryStep="false">
     <setup>setup</setup>
     <go>go</go>
-    <timeLimit steps="1500"/>
+    <timeLimit steps="5000"/>
     <metric>avg-gini</metric>
     <metric>starvation</metric>
     <metric>avg-wealth</metric>
     <metric>total-wealth</metric>
     <metric>avg-diff</metric>
-    <steppedValueSet variable="maximum-sugar-endowment" first="10" step="10" last="200"/>
-    <steppedValueSet variable="minimum-sugar-endowment" first="10" step="10" last="200"/>
+    <steppedValueSet variable="maximum-sugar-endowment" first="10" step="1" last="200"/>
+    <steppedValueSet variable="minimum-sugar-endowment" first="10" step="1" last="200"/>
     <enumeratedValueSet variable="visualization">
       <value value="&quot;no-visualization&quot;"/>
     </enumeratedValueSet>
@@ -1376,14 +1384,14 @@ NetLogo 6.4.0
   <experiment name="uniforme-lineal" repetitions="1" runMetricsEveryStep="false">
     <setup>setup</setup>
     <go>go</go>
-    <timeLimit steps="1500"/>
+    <timeLimit steps="5000"/>
     <metric>avg-gini</metric>
     <metric>starvation</metric>
     <metric>avg-wealth</metric>
     <metric>total-wealth</metric>
     <metric>avg-diff</metric>
-    <steppedValueSet variable="maximum-sugar-endowment" first="10" step="10" last="200"/>
-    <steppedValueSet variable="minimum-sugar-endowment" first="10" step="10" last="200"/>
+    <steppedValueSet variable="maximum-sugar-endowment" first="10" step="1" last="200"/>
+    <steppedValueSet variable="minimum-sugar-endowment" first="10" step="1" last="200"/>
     <enumeratedValueSet variable="visualization">
       <value value="&quot;no-visualization&quot;"/>
     </enumeratedValueSet>
@@ -1397,17 +1405,17 @@ NetLogo 6.4.0
       <value value="400"/>
     </enumeratedValueSet>
   </experiment>
-  <experiment name="sin politicas" repetitions="1" runMetricsEveryStep="false">
+  <experiment name="simple" repetitions="1" runMetricsEveryStep="false">
     <setup>setup</setup>
     <go>go</go>
-    <timeLimit steps="1500"/>
+    <timeLimit steps="5000"/>
     <metric>avg-gini</metric>
     <metric>starvation</metric>
     <metric>avg-wealth</metric>
     <metric>total-wealth</metric>
     <metric>avg-diff</metric>
-    <steppedValueSet variable="maximum-sugar-endowment" first="10" step="10" last="200"/>
-    <steppedValueSet variable="minimum-sugar-endowment" first="10" step="10" last="200"/>
+    <steppedValueSet variable="maximum-sugar-endowment" first="10" step="1" last="200"/>
+    <steppedValueSet variable="minimum-sugar-endowment" first="10" step="1" last="200"/>
     <enumeratedValueSet variable="visualization">
       <value value="&quot;no-visualization&quot;"/>
     </enumeratedValueSet>
